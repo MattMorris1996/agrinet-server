@@ -1,0 +1,102 @@
+const app = require('express')();
+const http = require('http').createServer(app);
+const io = require('socket.io')(http);
+
+const SerialPort = require('serialport')
+const Delimiter = require('@serialport/parser-delimiter')
+
+const events = require('events');
+const eventEmitter = new events.EventEmitter();
+
+const util = require('util');
+const port = new SerialPort('/dev/ttyACM0', { baudRate: 9600 })
+
+const parser = port.pipe(new Delimiter({ delimiter: '>>>>' }))
+
+parser.on('data', (chunk) => {
+    const buf = chunk.buffer;
+    const time = [hour, minute, second] = new Date().toLocaleTimeString("en-US").split(/:| /)
+
+    let obj = {
+        id: new Uint16Array(buf.slice(0, 2))[0],
+        type: new util.TextDecoder("utf-8").decode(new Uint8Array(buf.slice(4, 8))),
+        timestamp: time,
+        message: new Float32Array(buf.slice(16, 20))[0]
+    };
+
+    if (obj.type === 'TEMP') {
+        eventEmitter.emit('Temperature Data', obj)
+    }
+
+    if (obj.type === 'COND') {
+        eventEmitter.emit('Conductivity Data', obj)
+    }
+
+    if (obj.type === 'LIGT') {
+        eventEmitter.emit('Conductivity Data', obj)
+    }
+
+    if (obj.type === 'PWRS') {
+        eventEmitter.emit('Conductivity Data', obj)
+    }
+
+    if (obj.type === 'PHLV') {
+        eventEmitter.emit('Conductivity Data', obj)
+    }
+
+    if (obj.type === 'COND') {
+        eventEmitter.emit('Conductivity Data', obj)
+    }
+
+    if (obj.type === 'GPSC') {
+        eventEmitter.emit('HUMD', obj)
+    }
+}
+)
+
+function TemperatureEvent(cb) {
+    eventEmitter.on('Temperature Data', cb)
+}
+
+function ConductivityData(cb) {
+    eventEmitter.on('Conductivity Data', cb)
+}
+
+app.get('/', (req, res) => {
+    res.send('<h1>Hello world</h1>');
+  });
+
+io.on("connection", (socket) => {
+    console.log("new user connected");
+    socket.on('disconnect', () => {
+        console.log('user disconnected');
+    })
+    socket.on('subscribeToTemperature', () => {
+        console.log("Client subscribed to temperature data")
+        TemperatureEvent((temp_packet) => {
+            socket.emit('temperature', temp_packet);
+        }) 
+    })
+    socket.on('subsribeToConductivity', () => {
+        console.log("Client subscribed to conductivity data")
+        TemperatureEvent((temp_packet) => {
+            socket.emit('temperature', temp_packet);
+        }) 
+    })
+    socket.on('subscribeToHumidity', () => {
+        console.log("Client subscribed to humidity data")
+        TemperatureEvent((temp_packet) => {
+            socket.emit('temperature', temp_packet);
+        }) 
+    }
+    socket.on('subscribeToMoisture', () => {
+        console.log("Client subscribed to humidity data")
+        TemperatureEvent((temp_packet) => {
+            socket.emit('moisture', temp_packet);
+        }) 
+    }
+})
+
+http.listen(4000, function() {
+    console.log("listening on *: 4000");
+})
