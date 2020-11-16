@@ -5,7 +5,7 @@ const events = require('events');
 const eventEmitter = new events.EventEmitter();
 
 const util = require('util');
-const port = new SerialPort('/dev/ttyACM0', {baudRate:9600})
+const port = new SerialPort('/dev/ttyACM0', { baudRate: 9600 })
 
 const parser = port.pipe(new Delimiter({ delimiter: '>>>>' }))
 parser.on('data', (chunk) => {
@@ -13,7 +13,7 @@ parser.on('data', (chunk) => {
     const time = [hour, minute, second] = new Date().toLocaleTimeString("en-US").split(/:| /)
 
     let obj = {
-        id: new Uint16Array(buf.slice(0,2))[0],
+        id: new Uint16Array(buf.slice(0, 2))[0],
         type: new util.TextDecoder("utf-8").decode(new Uint8Array(buf.slice(4, 8))),
         timestamp: time,
         message: new Float32Array(buf.slice(16, 20))[0]
@@ -49,8 +49,8 @@ parser.on('data', (chunk) => {
 }
 )
 
-function TemperatureEvent (cb) {
+function TemperatureEvent(cb) {
     eventEmitter.on('Temperature Data', cb)
-} 
+}
 
-module.exports = {TemperatureEvent}
+module.exports = { TemperatureEvent }
